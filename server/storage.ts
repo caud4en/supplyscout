@@ -1,38 +1,59 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { jobs, logs, suppliers, type InsertJob, type InsertLog, type InsertSupplier } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Jobs
+  createJob(job: InsertJob): Promise<typeof jobs.$inferSelect>;
+  getJob(id: number): Promise<typeof jobs.$inferSelect | undefined>;
+  getJobs(): Promise<(typeof jobs.$inferSelect)[]>;
+  updateJobStatus(id: number, status: string): Promise<void>;
+
+  // Logs
+  addLog(log: InsertLog): Promise<typeof logs.$inferSelect>;
+  getLogsByJobId(jobId: number): Promise<(typeof logs.$inferSelect)[]>;
+
+  // Suppliers
+  addSupplier(supplier: InsertSupplier): Promise<typeof suppliers.$inferSelect>;
+  getSuppliersByJobId(jobId: number): Promise<(typeof suppliers.$inferSelect)[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async createJob(job: InsertJob) {
+    const [newJob] = await db.insert(jobs).values(job).returning();
+    return newJob;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getJob(id: number) {
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, id));
+    return job;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getJobs() {
+    return await db.select().from(jobs);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateJobStatus(id: number, status: string) {
+    await db.update(jobs).set({ status }).where(eq(jobs.id, id));
+  }
+
+  async addLog(log: InsertLog) {
+    const [newLog] = await db.insert(logs).values(log).returning();
+    return newLog;
+  }
+
+  async getLogsByJobId(jobId: number) {
+    return await db.select().from(logs).where(eq(logs.jobId, jobId));
+  }
+
+  async addSupplier(supplier: InsertSupplier) {
+    const [newSupplier] = await db.insert(suppliers).values(supplier).returning();
+    return newSupplier;
+  }
+
+  async getSuppliersByJobId(jobId: number) {
+    return await db.select().from(suppliers).where(eq(suppliers.jobId, jobId));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
