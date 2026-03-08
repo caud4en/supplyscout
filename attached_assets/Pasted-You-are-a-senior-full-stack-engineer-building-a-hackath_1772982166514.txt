@@ -1,0 +1,377 @@
+You are a senior full-stack engineer building a hackathon MVP.
+
+Your goal is to generate a complete working web application for the TinyFish Web Agent Hackathon.
+
+The application must demonstrate autonomous web agents navigating real websites.
+
+The product is called:
+
+SupplyScout — Autonomous Supplier Discovery & RFQ Agent
+
+The system should take a product specification and autonomously:
+
+Discover suppliers on directories
+
+Visit supplier websites
+
+Extract capability information
+
+Score suppliers against criteria
+
+Submit RFQ/contact forms automatically
+
+Return a ranked supplier shortlist
+
+The app must clearly demonstrate AI agents interacting with real websites, because this is the core judging criteria.
+
+Application Overview
+
+The application should be a simple but professional web app with:
+
+Frontend:
+Next.js (React)
+
+Backend:
+Python FastAPI
+
+AI:
+Claude API
+
+Agents:
+TinyFish Web Agents
+
+Storage:
+SQLite
+
+Core Workflow
+
+User inputs:
+
+Product specification (text)
+
+Certification requirements
+
+Maximum MOQ
+
+Preferred supplier location
+
+Quantity needed
+
+Optional: upload spec PDF
+
+When the user clicks:
+
+"Start Supplier Discovery"
+
+The backend launches a multi-agent pipeline.
+
+Agents perform the following workflow:
+
+Step 1 — Discovery Agent
+
+Navigate supplier directories:
+
+ThomasNet
+Alibaba
+GlobalSources
+
+Search using the product specification.
+
+Paginate through results.
+
+Extract supplier profile URLs.
+
+Store URLs in database.
+
+Step 2 — Qualification Agent
+
+Visit each supplier website.
+
+Navigate these pages if present:
+
+About
+Capabilities
+Certifications
+Products
+
+Extract information:
+
+Company name
+Location
+Certifications (ISO, etc)
+Manufacturing capabilities
+MOQ
+Lead times
+
+Send extracted text to Claude API.
+
+Claude should convert this into structured data.
+
+Example JSON output:
+
+{
+supplier_name:
+location:
+certifications:
+capabilities:
+estimated_moq:
+confidence_score:
+}
+
+Step 3 — Scoring Agent
+
+Score suppliers using rules:
+
++3 if certification matches requirement
++2 if location matches preferred region
++2 if MOQ below threshold
++1 if capabilities match spec
+
+Return a numeric score.
+
+Step 4 — RFQ Agent
+
+For suppliers above score threshold:
+
+Navigate to their website contact page.
+
+Identify forms such as:
+
+Contact
+Request Quote
+RFQ
+
+Automatically fill:
+
+Name
+Company
+Email
+Message
+
+Message template:
+
+"Hello, we are sourcing suppliers for the following product specification: [spec]. Could you provide pricing and MOQ details?"
+
+Submit the form.
+
+Capture confirmation messages.
+
+Step 5 — Results Synthesis
+
+Claude API summarizes results.
+
+Return:
+
+Top suppliers ranked by score.
+
+Generate comparison table:
+
+Supplier | Location | Certification | MOQ | RFQ Sent
+
+Web App Pages
+
+Page 1 — Landing Page
+
+Title:
+
+SupplyScout
+
+Subtitle:
+
+Autonomous Supplier Discovery & RFQ Agent
+
+Button:
+
+Start Sourcing
+
+Page 2 — Input Form
+
+Fields:
+
+Product specification (textarea)
+
+Certification requirements (text)
+
+Maximum MOQ (number)
+
+Preferred supplier location (text)
+
+Quantity needed (number)
+
+Upload specification file
+
+Button:
+
+Start Supplier Discovery
+
+Page 3 — Agent Activity Dashboard
+
+Display real-time logs:
+
+"Searching Alibaba"
+
+"Opening supplier profile"
+
+"Extracting certifications"
+
+"Submitting RFQ form"
+
+Show progress bar.
+
+Page 4 — Results Page
+
+Table:
+
+Supplier Name
+Location
+Certification
+MOQ
+Score
+RFQ Sent
+
+Add export button:
+
+Download CSV
+
+TinyFish Integration
+
+Implement a simple wrapper for TinyFish agents.
+
+Example pseudo interface:
+
+run_agent(task_description)
+
+Agents must perform actions like:
+
+open website
+click buttons
+fill forms
+extract text
+navigate pages
+
+Example tasks:
+
+"Search Alibaba for injection molded ABS enclosures"
+
+"Visit supplier page and extract certifications"
+
+"Find and submit RFQ form"
+
+Backend API Routes
+
+POST /start-job
+
+Starts supplier discovery workflow.
+
+GET /job-status
+
+Returns progress updates.
+
+GET /results
+
+Returns ranked suppliers.
+
+Folder Structure
+
+Generate full project structure.
+
+Example:
+
+supplyscout/
+
+frontend/
+pages/
+components/
+styles/
+
+backend/
+main.py
+agents/
+discovery_agent.py
+qualification_agent.py
+rfq_agent.py
+
+services/
+claude_client.py
+tinyfish_client.py
+
+database/
+models.py
+
+requirements.txt
+
+README.md
+
+UI Requirements
+
+The UI should look clean and modern.
+
+Use TailwindCSS.
+
+The dashboard should show:
+
+agent activity logs
+
+supplier count discovered
+
+RFQ submission count
+
+Important Hackathon Constraints
+
+Keep system simple.
+
+The demo only needs to work for:
+
+5–10 suppliers.
+
+Focus on showing:
+
+real website navigation
+
+form filling
+
+multi-agent workflow
+
+Deliverables
+
+Generate:
+
+Full backend code
+
+Full frontend code
+
+Database schema
+
+Agent logic
+
+Claude API integration
+
+TinyFish agent wrapper
+
+README explaining how to run project locally
+
+Important
+
+Do NOT skip implementation details.
+
+Output:
+
+Complete runnable code.
+
+Explain briefly where TinyFish agent calls happen.
+
+End Goal
+
+A judge should be able to:
+
+Input a product specification
+
+Watch agents navigate supplier websites
+
+See supplier data extracted
+
+See RFQ forms submitted
+
+Receive ranked supplier results
+
+Generate the full project now.
