@@ -44,8 +44,8 @@ export default function Home() {
               Deploy Your Agent <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
-          <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full font-medium bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white transition-all">
-            View Example Output
+          <Button asChild variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full font-medium bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white transition-all">
+            <Link href="/jobs/4">View Example Output</Link>
           </Button>
         </motion.div>
 
