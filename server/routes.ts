@@ -71,6 +71,45 @@ export async function registerRoutes(
     res.json(suppliers);
   });
 
+  // ── Global Manufacturer Database ──────────────────────────────────────────
+
+  app.get("/api/manufacturers", async (req, res) => {
+    try {
+      const { search, country, region, industry, certifications, page, pageSize } = req.query;
+      const result = await storage.getManufacturers({
+        search: search as string | undefined,
+        country: country as string | undefined,
+        region: region as string | undefined,
+        industry: industry as string | undefined,
+        certifications: certifications as string | undefined,
+        page: page ? Number(page) : 1,
+        pageSize: pageSize ? Math.min(Number(pageSize), 200) : 50,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Failed to query manufacturers" });
+    }
+  });
+
+  app.get("/api/manufacturers/stats", async (req, res) => {
+    try {
+      const stats = await storage.getManufacturerStats();
+      res.json(stats);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Failed to get stats" });
+    }
+  });
+
+  app.get("/api/manufacturers/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    const m = await storage.getManufacturerById(id);
+    if (!m) return res.status(404).json({ message: "Manufacturer not found" });
+    res.json(m);
+  });
+
   return httpServer;
 }
 

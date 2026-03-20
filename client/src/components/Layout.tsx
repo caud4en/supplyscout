@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Compass, Plus } from "lucide-react";
+import { Compass, Plus, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Supply<span className="text-primary">Scout</span>
             </span>
           </Link>
-          <nav>
+          <nav className="flex items-center gap-1">
+            <Button asChild variant="ghost" className="text-slate-600 hover:text-primary hover:bg-primary/10 font-medium hidden sm:flex">
+              <Link href="/database"><Globe className="w-4 h-4 mr-2" /> Database</Link>
+            </Button>
             <Button asChild variant="ghost" className="text-slate-600 hover:text-primary hover:bg-primary/10 font-semibold hidden sm:flex">
               <Link href="/new"><Plus className="w-4 h-4 mr-2" /> New Job</Link>
             </Button>

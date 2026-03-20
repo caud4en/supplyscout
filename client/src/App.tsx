@@ -9,6 +9,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import NewJob from "./pages/NewJob";
 import JobDashboard from "./pages/JobDashboard";
+import ManufacturerDatabase from "./pages/ManufacturerDatabase";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/new" component={NewJob} />
         <Route path="/jobs/:id" component={JobDashboard} />
+        <Route path="/database" component={ManufacturerDatabase} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

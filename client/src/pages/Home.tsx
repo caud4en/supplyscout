@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowRight, Bot, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Bot, ShieldCheck, Zap, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -46,6 +46,9 @@ export default function Home() {
           </Button>
           <Button asChild variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full font-medium bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white transition-all">
             <Link href="/jobs/4">View Example Output</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full font-medium bg-white/50 backdrop-blur-sm border-slate-200 hover:bg-white transition-all">
+            <Link href="/database"><Globe className="mr-2 w-5 h-5" />Browse Database</Link>
           </Button>
         </motion.div>
 
