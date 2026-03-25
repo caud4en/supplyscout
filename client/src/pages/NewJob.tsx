@@ -29,9 +29,9 @@ export default function NewJob() {
     defaultValues: {
       spec: "",
       certifications: "",
-      maxMoq: undefined,
+      maxMoq: "" as any,
       preferredLocation: "",
-      quantity: undefined,
+      quantity: "" as any,
     },
   });
 
