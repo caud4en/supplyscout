@@ -1,7 +1,7 @@
 import { useRoute } from "wouter";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, AlertCircle, Loader2, ArrowLeft, Building2 } from "lucide-react";
+import { Download, AlertCircle, Loader2, ArrowLeft, Building2, Info } from "lucide-react";
 
 import { useJob, useJobLogs, useJobSuppliers } from "@/hooks/use-jobs";
 import { Terminal } from "@/components/Terminal";
