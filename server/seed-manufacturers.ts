@@ -767,7 +767,72 @@ async function seedManufacturers() {
   process.exit(0);
 }
 
-seedManufacturers().catch((err) => {
-  console.error("❌  Seeding failed:", err);
-  process.exit(1);
-});
+// ─── Migration-safe export (append-only, no process.exit) ───────────────────
+
+export async function seedManufacturersForMigration(): Promise<void> {
+  const realData = REAL_MANUFACTURERS.map((m) => ({
+    name: m.name,
+    country: m.country,
+    city: m.city || null,
+    region: m.region,
+    industry: m.industry,
+    subIndustry: m.subIndustry || null,
+    certifications: m.certifications,
+    capabilities: m.capabilities,
+    employeeCount: m.employeeCount || null,
+    annualRevenue: m.annualRevenue || null,
+    moqMin: m.moqMin || null,
+    moqMax: m.moqMax || null,
+    leadTimeDays: m.leadTimeDays || null,
+    url: m.url || null,
+    email: m.url ? `info@${m.url.replace(/https?:\/\/(www\.)?/, '')}` : null,
+    phone: null,
+    verified: m.verified,
+    dataSource: m.dataSource,
+  }));
+
+  const TARGET = 10500;
+  const synthetic = generateManufacturers(TARGET - realData.length).map((m) => ({
+    name: m.name,
+    country: m.country,
+    city: m.city || null,
+    region: m.region,
+    industry: m.industry,
+    subIndustry: null,
+    certifications: m.certifications,
+    capabilities: m.capabilities,
+    employeeCount: m.employeeCount || null,
+    annualRevenue: m.annualRevenue || null,
+    moqMin: m.moqMin || null,
+    moqMax: m.moqMax || null,
+    leadTimeDays: m.leadTimeDays || null,
+    url: m.url || null,
+    email: generateEmail(m.name, m.country),
+    phone: null,
+    verified: false,
+    dataSource: m.dataSource,
+  }));
+
+  const allRecords = [...realData, ...synthetic];
+  console.log(`[migrate] Seeding ${allRecords.length} manufacturers into empty database…`);
+
+  const BATCH = 500;
+  let inserted = 0;
+  for (let i = 0; i < allRecords.length; i += BATCH) {
+    const chunk = allRecords.slice(i, i + BATCH);
+    await db.insert(manufacturers).values(chunk);
+    inserted += chunk.length;
+    console.log(`[migrate]   Inserted ${inserted} / ${allRecords.length}`);
+  }
+
+  console.log(`[migrate] Seed complete — ${allRecords.length} records written`);
+}
+
+// ─── CLI entry point ─────────────────────────────────────────────────────────
+
+if (process.argv[1] && process.argv[1].endsWith("seed-manufacturers.ts")) {
+  seedManufacturers().catch((err) => {
+    console.error("❌  Seeding failed:", err);
+    process.exit(1);
+  });
+}

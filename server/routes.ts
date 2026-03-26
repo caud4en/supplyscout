@@ -9,6 +9,7 @@ import { suppliers as suppliersTable } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { runAgent, extractSupplierInfo } from "./tinyfish";
 import { runIngestionPipeline, getIngestionHistory, getIngestionStats } from "./ingestion";
+import { validateDatabase } from "./migrate";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -152,6 +153,28 @@ export async function registerRoutes(
         .catch(err => console.error(`[Ingestion] Run failed:`, err));
     } catch (err) {
       res.status(500).json({ message: "Failed to start ingestion pipeline" });
+    }
+  });
+
+  // Health check — database consistency validation
+  app.get("/api/health", async (_req, res) => {
+    try {
+      const report = await validateDatabase();
+      res.status(report.ok ? 200 : 503).json({
+        status: report.ok ? "healthy" : "degraded",
+        environment: process.env.NODE_ENV ?? "unknown",
+        database: {
+          manufacturers: report.manufacturers,
+          jobs: report.jobs,
+          suppliers: report.suppliers,
+          ingestionRuns: report.ingestionRuns,
+          hasSearchIndex: report.hasSearchIndex,
+          hasSearchVector: report.hasSearchVector,
+        },
+        issues: report.issues,
+      });
+    } catch (err: any) {
+      res.status(503).json({ status: "error", message: err.message });
     }
   });
 
