@@ -235,10 +235,18 @@ export async function validateDatabase(): Promise<{
     const hasSearchIndex  = idxRes.rows.length > 0;
     const hasSearchVector = colRes.rows.length > 0;
 
+    // Integrity check: detect any record with a URL that is not verified.
+    // This is the zero-tolerance gate — no fake/unverified URLs should exist.
+    const integrityRes = await client.query(
+      `SELECT count(*)::int AS n FROM manufacturers WHERE url IS NOT NULL AND verified = false`
+    );
+    const unverifiedWithUrl: number = integrityRes.rows[0]?.n ?? 0;
+
     const issues: string[] = [];
-    if (manufacturers < 1000) issues.push(`Low manufacturer count: ${manufacturers}`);
-    if (!hasSearchIndex)      issues.push("Missing GIN search index");
-    if (!hasSearchVector)     issues.push("Missing search_vector generated column");
+    if (manufacturers < 1)      issues.push("No manufacturers in database");
+    if (unverifiedWithUrl > 0)   issues.push(`DATA INTEGRITY VIOLATION: ${unverifiedWithUrl} records have URLs but are not verified`);
+    if (!hasSearchIndex)         issues.push("Missing GIN search index");
+    if (!hasSearchVector)        issues.push("Missing search_vector generated column");
 
     return { ok: issues.length === 0, manufacturers, jobs, suppliers, ingestionRuns, hasSearchIndex, hasSearchVector, issues };
   } finally {
@@ -254,35 +262,53 @@ export async function runMigrations(): Promise<void> {
   // Stage 1–3: Schema + indexes
   await applySchema();
 
-  // Stage 4: Seed if empty
+  // Stage 4a: PURGE all template-generated records (zero-fake-data policy).
+  // Template records have fabricated company names like "Alpha Chip Ltd." which are
+  // not real companies. Removing them is the first step of every boot, idempotent.
+  {
+    const client = await pool.connect();
+    try {
+      const del = await client.query(
+        `DELETE FROM manufacturers WHERE data_source ILIKE '%Generated%'`
+      );
+      if ((del.rowCount ?? 0) > 0) {
+        mlog(`Purged ${del.rowCount} template-generated records (zero-fake-data policy)`);
+      } else {
+        mlog("Template purge: database already clean");
+      }
+    } finally {
+      client.release();
+    }
+  }
+
+  // Stage 4b: Re-sync real manufacturer records.
+  // Delete all 'Public company records' rows and re-insert from REAL_MANUFACTURERS.
+  // This ensures no duplicates and keeps the verified set in sync with the codebase.
+  // TinyFish-ingested records (different data_source) are preserved untouched.
+  {
+    const client = await pool.connect();
+    try {
+      const del = await client.query(
+        `DELETE FROM manufacturers WHERE data_source = 'Public company records'`
+      );
+      mlog(`Re-sync: removed ${del.rowCount} stale real-company records for clean re-insert`);
+    } finally {
+      client.release();
+    }
+  }
+  mlog("Seeding verified real manufacturers from canonical list…");
+  const { seedManufacturersForMigration } = await import("./seed-manufacturers");
+  await seedManufacturersForMigration();
+
   const count = await getManufacturerCount();
-  mlog(`Manufacturer count: ${count}`);
+  mlog(`Total manufacturer count after seed: ${count}`);
 
-  if (count < 1000) {
-    mlog("Database appears empty — running seed (this takes ~60 s on first deploy)…");
-    const { seedManufacturersForMigration } = await import("./seed-manufacturers");
-    await seedManufacturersForMigration();
-  } else {
-    mlog("Seeding skipped — database already populated");
-  }
-
-  // Stage 4b: Null out fabricated URLs from template-generated records.
-  // This is idempotent — rows already null-ed are not re-touched.
-  // Prevents fake domains (https://www.alpha-chip-ltd.com) from appearing as real URLs.
-  const { nullifyTemplateUrls } = await import("./verify-urls");
-  const cleanup = await nullifyTemplateUrls();
-  if (cleanup.updated > 0) {
-    mlog(`URL cleanup: nulled ${cleanup.updated} fabricated URLs from template records`);
-  } else {
-    mlog("URL cleanup: no fabricated URLs found (already clean)");
-  }
-
-  // Stage 5: Validate
+  // Stage 5: Validate data integrity
   const health = await validateDatabase();
   if (health.ok) {
     mlog(
       `Migrations complete ✓ — ` +
-      `${health.manufacturers.toLocaleString()} manufacturers, ` +
+      `${health.manufacturers.toLocaleString()} verified manufacturers, ` +
       `GIN index: ${health.hasSearchIndex ? "✓" : "✗"}, ` +
       `search_vector: ${health.hasSearchVector ? "✓" : "✗"}`
     );

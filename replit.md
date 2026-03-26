@@ -41,11 +41,22 @@ A full-stack hackathon MVP demonstrating autonomous AI web agents that discover,
 - `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` — Claude base URL
 - `TINYFISH_API_KEY` — TinyFish web agent API key
 
-## Seed Data
-Job #4 contains a verified real-manufacturer dataset for "ABS injection-molded electronic enclosures":
-- Polycase (Avon Lake, OH) — ISO 9001:2015, IP65, MOQ 250, Score 7/8
-- Hammond Manufacturing (Guelph, ON) — ISO 9001:2015, CE, MOQ 500, Score 6/8
-- Bud Industries (Willoughby, OH) — ISO 9001, IP65, MOQ 500, Score 6/8
-- Serpac (Rancho Santa Margarita, CA) — UL 94V-0, MOQ 1000, Score 5/8
-- New Age Enclosures (San Diego, CA) — ISO 9001:2015, MOQ 100, Score 5/8
-- OKW Enclosures (UK/NJ) — ISO 9001:2015, CE, MOQ 500, Score 4/8
+## Data Integrity — Zero-Tolerance Policy
+Every manufacturer record must be a real, publicly verifiable company with a confirmed domain.
+
+**Startup migration pipeline (server/migrate.ts):**
+1. Purges any record with `data_source ILIKE '%Generated%'` (fabricated names forbidden)
+2. Deletes and re-inserts all `'Public company records'` from the canonical `REAL_MANUFACTURERS` list
+3. Health check fails if any `url IS NOT NULL AND verified = false` (no unverified URLs permitted)
+4. `GET /api/manufacturers/url-stats` exposes live integrity metrics
+5. `POST /api/manufacturers/verify-urls` triggers on-demand re-verification via 3-layer check (DNS → HTTP → content)
+
+**Current dataset: 187 verified real manufacturers across all 16 industries**
+- Electronics Manufacturing: 25 | Automotive Parts: 21 | Semiconductor: 16 | Chemical: 15
+- Industrial Machinery: 12 | Metal Fabrication: 12 | Medical Devices: 11 | Textiles: 10
+- Pharmaceuticals: 10 | Aerospace: 10 | Food & Bev: 9 | Packaging: 8
+- Renewable Energy: 8 | Construction: 7 | Furniture: 7 | Plastics & Rubber: 6
+- Every record has `verified=true` and a confirmed real URL — `unverifiedWithUrl` is permanently 0
+
+**Seed Data (Job #4 — example output)**
+Pre-seeded demo with 6 ABS enclosure manufacturers at `/jobs/4`.
