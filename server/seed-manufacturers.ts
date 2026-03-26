@@ -679,7 +679,7 @@ function generateManufacturers(targetCount: number) {
           moqMin,
           moqMax,
           leadTimeDays: leadTime,
-          url: generateUrl(name, country),
+          url: null,  // No URL — template records have no verified domain
           verified: false,
           dataSource: "Generated from industry pattern templates",
         });
@@ -737,8 +737,8 @@ async function seedManufacturers() {
     moqMin: m.moqMin || null,
     moqMax: m.moqMax || null,
     leadTimeDays: m.leadTimeDays || null,
-    url: m.url || null,
-    email: generateEmail(m.name, m.country),
+    url: null,   // Template records have no verified domain
+    email: null, // No fabricated emails
     phone: null,
     verified: false,
     dataSource: m.dataSource,
@@ -806,8 +806,8 @@ export async function seedManufacturersForMigration(): Promise<void> {
     moqMin: m.moqMin || null,
     moqMax: m.moqMax || null,
     leadTimeDays: m.leadTimeDays || null,
-    url: m.url || null,
-    email: generateEmail(m.name, m.country),
+    url: null,   // Template records have no verified domain
+    email: null, // No fabricated emails
     phone: null,
     verified: false,
     dataSource: m.dataSource,

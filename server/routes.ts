@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { runAgent, extractSupplierInfo } from "./tinyfish";
 import { runIngestionPipeline, getIngestionHistory, getIngestionStats } from "./ingestion";
 import { validateDatabase } from "./migrate";
+import { batchVerifyManufacturerUrls, getUrlStats } from "./verify-urls";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -104,6 +105,16 @@ export async function registerRoutes(
     }
   });
 
+  // URL integrity stats — static routes must be declared BEFORE /:id
+  app.get("/api/manufacturers/url-stats", async (_req, res) => {
+    try {
+      const stats = await getUrlStats();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/manufacturers/:id", async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -153,6 +164,45 @@ export async function registerRoutes(
         .catch(err => console.error(`[Ingestion] Run failed:`, err));
     } catch (err) {
       res.status(500).json({ message: "Failed to start ingestion pipeline" });
+    }
+  });
+
+  // Trigger a batch URL verification pass on the verified manufacturers.
+  // Runs in the background; responds immediately with a job token.
+  // Accepts: { limit?: number, concurrency?: number, timeoutMs?: number }
+  app.post("/api/manufacturers/verify-urls", async (req, res) => {
+    try {
+      const limit      = Math.min(Number(req.body?.limit ?? 84), 500);
+      const concurrency = Math.min(Number(req.body?.concurrency ?? 5), 10);
+      const timeoutMs  = Math.min(Number(req.body?.timeoutMs ?? 6000), 15000);
+
+      // Respond immediately
+      res.json({
+        message: "URL verification started",
+        params: { limit, concurrency, timeoutMs },
+        note: "Check /api/manufacturers/url-stats for updated counts when complete.",
+      });
+
+      // Run in background
+      batchVerifyManufacturerUrls({
+        verifiedOnly: true,
+        limit,
+        concurrency,
+        timeoutMs,
+        onProgress: (checked, total, result) => {
+          if (!result.valid) {
+            console.log(`[verify-urls] ✗ ${result.url} — ${result.error}`);
+          }
+        },
+      })
+        .then((report) =>
+          console.log(
+            `[verify-urls] Complete — ${report.valid} valid, ${report.invalid} invalid (${report.nulled} nulled)`
+          )
+        )
+        .catch((err) => console.error(`[verify-urls] Error: ${err.message}`));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 

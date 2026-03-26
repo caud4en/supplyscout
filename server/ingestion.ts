@@ -28,6 +28,7 @@ import { manufacturers, ingestionRuns } from "@shared/schema";
 import { eq, sql, and, ilike } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { runAgent } from "./tinyfish";
+import { verifyUrl } from "./verify-urls";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -254,6 +255,19 @@ async function appendRecords(
         continue;
       }
 
+      // Verify URL before storing — only keep URLs that pass DNS + HTTP checks.
+      // If a URL is provided but fails verification, the record is still inserted
+      // with url=null so we retain the capability/location data without a bad link.
+      let verifiedUrl: string | null = null;
+      if (r.url) {
+        const check = await verifyUrl(r.url, 5000);
+        if (check.valid) {
+          verifiedUrl = r.url;
+        } else {
+          console.log(`[ingestion] URL rejected for ${r.name}: ${r.url} — ${check.error}`);
+        }
+      }
+
       await db.insert(manufacturers).values({
         name: r.name,
         country: r.country,
@@ -264,8 +278,8 @@ async function appendRecords(
         capabilities: r.capabilities ?? null,
         employeeCount: r.employeeCount ?? null,
         moqMin: r.moqMin ?? null,
-        url: r.url ?? null,
-        verified: false,
+        url: verifiedUrl,
+        verified: verifiedUrl !== null,
         dataSource,
       });
       added++;

@@ -266,6 +266,17 @@ export async function runMigrations(): Promise<void> {
     mlog("Seeding skipped — database already populated");
   }
 
+  // Stage 4b: Null out fabricated URLs from template-generated records.
+  // This is idempotent — rows already null-ed are not re-touched.
+  // Prevents fake domains (https://www.alpha-chip-ltd.com) from appearing as real URLs.
+  const { nullifyTemplateUrls } = await import("./verify-urls");
+  const cleanup = await nullifyTemplateUrls();
+  if (cleanup.updated > 0) {
+    mlog(`URL cleanup: nulled ${cleanup.updated} fabricated URLs from template records`);
+  } else {
+    mlog("URL cleanup: no fabricated URLs found (already clean)");
+  }
+
   // Stage 5: Validate
   const health = await validateDatabase();
   if (health.ok) {
