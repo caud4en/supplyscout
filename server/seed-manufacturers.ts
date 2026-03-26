@@ -364,7 +364,99 @@ const INDUSTRIES: Record<string, {
     nameSuffixes: ["Furniture", "Woodworks", "Interiors", "Furniture Group", "Home Furnishings"],
     employeeSizes: ["50-500", "500-2000", "2000-10000"],
     revenue: ["$5M-50M", "$50M-500M", "$500M+"],
-  }
+  },
+  "Semiconductor & Electronic Components": {
+    certifications: [
+      ["ISO 9001", "IATF 16949", "AEC-Q100", "ISO 14001", "IECQ QC 080000"],
+      ["ISO 9001", "ISO 14001", "REACH", "RoHS", "JEDEC"],
+      ["ISO 9001", "AS9100D", "ITAR", "AEC-Q200", "ISO 14001"],
+      ["ISO 9001", "ISO 13485", "IEC 61249", "UL", "CE"],
+      ["ISO 9001", "IATF 16949", "PPAP", "APQP", "RoHS"],
+    ],
+    capabilities: [
+      "IC packaging, wafer-level packaging, flip-chip, BGA, QFN, SOP",
+      "Passive components, resistors, capacitors, inductors, filters, EMI suppression",
+      "Power semiconductors, MOSFETs, IGBTs, diodes, rectifiers, thyristors",
+      "Connectors, sockets, pin headers, wire-to-board, board-to-board, FFC/FPC",
+      "Sensors, MEMS, accelerometers, gyroscopes, pressure sensors, optical",
+      "PCB fabrication, multilayer, HDI, flex, rigid-flex, high-frequency RF boards",
+      "Oscillators, crystals, TCXO, OCXO, VCXO, timing devices",
+    ],
+    moqRange: [1000, 100000],
+    leadTimeDays: [8, 52],
+    nameSuffixes: ["Semiconductor", "Electronics", "Components", "Microelectronics", "Chip", "Silicon", "Micro", "Tech"],
+    employeeSizes: ["200-1000", "1000-10000", "10000-50000", "50000+"],
+    revenue: ["$50M-500M", "$500M-5B", "$5B+"],
+  },
+  "Renewable Energy & Clean Technology": {
+    certifications: [
+      ["ISO 9001", "ISO 14001", "IEC 61215", "IEC 61730", "MCS"],
+      ["ISO 9001", "ISO 14001", "IEC 62109", "IEC 62477", "UL 1741"],
+      ["ISO 9001", "ISO 14001", "IEC 61400", "DNVGL", "GL"],
+      ["ISO 9001", "ISO 45001", "OHSAS 18001", "CE", "ISO 50001"],
+      ["ISO 9001", "ISO 14001", "REACH", "RoHS", "IEC 61000"],
+    ],
+    capabilities: [
+      "Solar panels, monocrystalline, polycrystalline, bifacial, thin-film modules",
+      "Wind turbine components, blades, nacelles, towers, gearboxes",
+      "Battery energy storage, lithium-ion packs, BMS, rack systems, utility-scale",
+      "Solar inverters, string inverters, central inverters, microinverters, optimizers",
+      "EV charging equipment, AC chargers, DC fast chargers, OCPP integration",
+      "Heat pumps, geothermal systems, HVAC, heat exchangers, thermal management",
+      "Hydrogen electrolysers, fuel cells, PEM, alkaline, green hydrogen systems",
+    ],
+    moqRange: [10, 5000],
+    leadTimeDays: [30, 180],
+    nameSuffixes: ["Solar", "Energy", "Renewables", "Clean Energy", "Green Tech", "Power", "Wind", "EV", "Energy Systems"],
+    employeeSizes: ["100-500", "500-5000", "5000-30000", "30000+"],
+    revenue: ["$20M-200M", "$200M-2B", "$2B+"],
+  },
+  "Pharmaceutical Manufacturing": {
+    certifications: [
+      ["GMP", "FDA 21 CFR Part 211", "ICH Q10", "ISO 9001", "EU GMP"],
+      ["GMP", "WHO GMP", "ISO 13485", "ICH Q7", "PIC/S"],
+      ["GMP", "FDA 21 CFR Part 211", "USP", "ISO 14001", "EudraLex"],
+      ["GMP", "ICH Q10", "EU GMP", "ANVISA RDC 301", "ISO 9001"],
+      ["GMP", "FDA 21 CFR Part 111", "NSF", "CGMP", "ISO 22000"],
+    ],
+    capabilities: [
+      "Solid dosage forms, tablets, capsules, granulation, coating, blister packing",
+      "API synthesis, chemical synthesis, fermentation, purification, drug substance",
+      "Sterile manufacturing, injectables, lyophilisation, aseptic filling, vials",
+      "Topical & semi-solid, creams, ointments, gels, suppositories, transdermal",
+      "Biotechnology, monoclonal antibodies, biosimilars, biologics, cell therapy",
+      "Nutraceuticals, dietary supplements, softgels, private label, contract packaging",
+      "Controlled-release, extended-release, enteric coating, modified dosage forms",
+    ],
+    moqRange: [5000, 500000],
+    leadTimeDays: [60, 365],
+    nameSuffixes: ["Pharma", "Pharmaceuticals", "BioPharma", "Life Sciences", "Therapeutics", "Labs", "Generics"],
+    employeeSizes: ["100-1000", "1000-10000", "10000-100000", "100000+"],
+    revenue: ["$20M-200M", "$200M-2B", "$2B+"],
+  },
+  "Construction & Building Materials": {
+    certifications: [
+      ["ISO 9001", "ISO 14001", "CE", "EN 1090", "OHSAS 18001"],
+      ["ISO 9001", "ISO 14001", "LEED", "BREEAM", "Cradle to Cradle"],
+      ["ISO 9001", "EN 206", "ASTM C150", "ISO 14001", "BBA"],
+      ["ISO 9001", "FM Approved", "ASCE 7", "ICC", "ISO 45001"],
+      ["ISO 9001", "ISO 14001", "EPD", "FSC", "PEFC"],
+    ],
+    capabilities: [
+      "Precast concrete, prestressed elements, structural panels, hollow-core slabs",
+      "Structural steel, beams, columns, trusses, modular steel frames",
+      "Insulation, mineral wool, EPS, XPS, PIR, spray foam, thermal systems",
+      "Roofing systems, metal roofing, membrane, shingles, solar tiles, gutters",
+      "Glazing, curtain wall, windows, doors, aluminium facades, structural glass",
+      "Masonry, bricks, blocks, pavers, tiles, stone cladding, terracotta",
+      "Flooring systems, hardwood, LVT, carpet tiles, epoxy, raised access floors",
+    ],
+    moqRange: [10, 10000],
+    leadTimeDays: [14, 120],
+    nameSuffixes: ["Construction", "Building", "Materials", "Build", "Construct", "Structures", "Systems", "Solutions"],
+    employeeSizes: ["50-500", "500-5000", "5000-50000", "50000+"],
+    revenue: ["$10M-100M", "$100M-1B", "$1B+"],
+  },
 };
 
 // ─── Real Known Manufacturers ──────────────────────────────────────────────────
@@ -497,6 +589,10 @@ const FIRST_WORDS = {
   "Packaging": ["Advanced", "Allied", "Alpha", "American", "Box", "Continental", "Core", "Custom", "Eastern", "Eco", "Excel", "First", "Flex", "Global", "Green", "Industrial", "Innovative", "Integrated", "National", "Pacific", "Pack", "Pioneer", "Premier", "Prime", "Quality", "Regional", "Reliable", "Seal", "Smart", "Solid", "Superior", "Total", "United", "Universal"],
   "Aerospace & Defense": ["Aero", "Aerospace", "Advanced", "Allied", "Alpha", "Applied", "Atlas", "Continental", "Core", "Dynamic", "Eagle", "Elite", "Excel", "Falcon", "First", "General", "Global", "Hawk", "Heritage", "Integrated", "National", "Patriot", "Precision", "Premier", "Pro", "Quality", "Reliable", "Summit", "Superior", "Technical", "Tech", "Ultra", "Vantage"],
   "Furniture & Woodworking": ["Artisan", "Beautiful", "Classic", "Comfort", "Continental", "Country", "Creative", "Custom", "Design", "Elegant", "Excel", "Fine", "First", "Global", "Heritage", "Home", "Ideal", "Imperial", "Italian", "Luxury", "Master", "Modern", "National", "Oak", "Pacific", "Premier", "Quality", "Royal", "Smart", "Solid", "Superior", "Traditional", "United", "Unique", "Wood"],
+  "Semiconductor & Electronic Components": ["Advanced", "Alpha", "Applied", "Apex", "Axon", "Circuit", "Core", "Delta", "Digital", "Epoch", "Flux", "Global", "Integrated", "Kyoto", "Logic", "Matrix", "Micro", "Nano", "Nexus", "Nova", "Orbital", "Pacific", "Photon", "Pixel", "Precision", "Prime", "Quantum", "Rapid", "Sigma", "Silicon", "Smart", "Solid", "Spectrum", "Summit", "Tech", "Ultra", "Unified", "Vantage", "Vector", "Volt", "Zenith", "Zero"],
+  "Renewable Energy & Clean Technology": ["Aeon", "Azure", "Bright", "Carbon", "Clean", "Clear", "Eco", "Electra", "Emerald", "Ethos", "Flux", "Green", "Global", "Grid", "Helio", "Horizon", "Hydro", "Infinity", "Ion", "Lumen", "Luminos", "Meridian", "Modern", "Natura", "Nexus", "Nova", "Orion", "Pacific", "Pioneer", "Photon", "Prime", "Pure", "Radiant", "Renewable", "Solar", "Star", "Summit", "Sun", "Terra", "Verdant", "Volt", "Wind", "Zenith"],
+  "Pharmaceutical Manufacturing": ["Advanced", "Allied", "Alpha", "Applied", "Apex", "Bio", "Biopharma", "Capital", "Cardinal", "Clinical", "Core", "Dynamic", "Evolve", "Excel", "First", "Global", "Health", "Heritage", "Integrated", "Leading", "Life", "Medical", "Metro", "Medi", "National", "Nexus", "Omni", "Pacific", "Patheon", "Pharma", "Precision", "Premier", "Prime", "Quality", "Reliable", "Sterling", "Summit", "Synta", "Ultra", "United", "Universal"],
+  "Construction & Building Materials": ["Alliance", "Alpha", "American", "Apex", "Atlas", "Benchmark", "Capital", "Central", "Continental", "Core", "Custom", "Dynamic", "Eastern", "Elite", "Empire", "Euro", "Excel", "First", "General", "Global", "Grand", "Heritage", "Imperial", "Key", "Landmark", "Metro", "Modern", "National", "Pacific", "Pioneer", "Premier", "Prime", "Pro", "Quality", "Regional", "Reliable", "Solid", "Sterling", "Summit", "Superior", "Titan", "Ultra", "United", "Universal", "Western"],
 };
 
 function pickRandom<T>(arr: T[]): T {
@@ -625,8 +721,8 @@ async function seedManufacturers() {
     dataSource: m.dataSource,
   }));
 
-  // Generate synthetic to reach target
-  const TARGET = 5200;
+  // Generate synthetic to reach target — 4 new industries added, total expanded to 10,500
+  const TARGET = 10500;
   const synthetic = generateManufacturers(TARGET - realData.length).map((m) => ({
     name: m.name,
     country: m.country,

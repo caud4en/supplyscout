@@ -7,7 +7,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { db } from "./db";
 import { suppliers as suppliersTable } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { runAgent, extractSupplierInfo, submitRFQForm } from "./tinyfish";
+import { runAgent, extractSupplierInfo } from "./tinyfish";
+import { runIngestionPipeline, getIngestionHistory, getIngestionStats } from "./ingestion";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -108,6 +109,50 @@ export async function registerRoutes(
     const m = await storage.getManufacturerById(id);
     if (!m) return res.status(404).json({ message: "Manufacturer not found" });
     res.json(m);
+  });
+
+  // ── Data Ingestion Pipeline ────────────────────────────────────────────────
+
+  // GET /api/ingestion/runs — list recent ingestion runs (audit log)
+  app.get("/api/ingestion/runs", async (_req, res) => {
+    try {
+      const runs = await getIngestionHistory(100);
+      res.json(runs);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch ingestion history" });
+    }
+  });
+
+  // GET /api/ingestion/stats — summary statistics
+  app.get("/api/ingestion/stats", async (_req, res) => {
+    try {
+      const [stats, dbStats] = await Promise.all([
+        getIngestionStats(),
+        storage.getManufacturerStats(),
+      ]);
+      res.json({ ...stats, totalManufacturers: dbStats.totalCount });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch ingestion stats" });
+    }
+  });
+
+  // POST /api/ingestion/run — trigger an ingestion run (non-blocking)
+  app.post("/api/ingestion/run", async (req, res) => {
+    try {
+      const { industry, region, country, query, maxRecords } = req.body ?? {};
+
+      // Respond immediately — the pipeline runs in the background
+      res.json({
+        message: "Ingestion pipeline started",
+        params: { industry, region, country, query, maxRecords },
+      });
+
+      runIngestionPipeline({ industry, region, country, query, maxRecords })
+        .then(result => console.log(`[Ingestion] Run complete:`, result))
+        .catch(err => console.error(`[Ingestion] Run failed:`, err));
+    } catch (err) {
+      res.status(500).json({ message: "Failed to start ingestion pipeline" });
+    }
   });
 
   return httpServer;

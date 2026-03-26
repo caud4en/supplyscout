@@ -40,7 +40,7 @@ export const manufacturers = pgTable("manufacturers", {
   name: text("name").notNull(),
   country: text("country").notNull(),
   city: text("city"),
-  region: text("region"),           // geographic region: Asia-Pacific, Europe, North America, etc.
+  region: text("region"),
   industry: text("industry").notNull(),
   subIndustry: text("sub_industry"),
   certifications: text("certifications"),
@@ -62,6 +62,24 @@ export const manufacturers = pgTable("manufacturers", {
   regionIdx: index("manufacturers_region_idx").on(table.region),
 }));
 
+// Ingestion Run Audit Log — append-only provenance tracking for all data additions
+export const ingestionRuns = pgTable("ingestion_runs", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull(),          // "seed", "tinyfish", "api", "manual"
+  industry: text("industry"),                 // target industry for this run (null = all)
+  region: text("region"),                     // target region (null = all)
+  country: text("country"),                   // target country (null = all)
+  query: text("query"),                       // search query or directory URL used
+  status: text("status").notNull(),           // "running" | "completed" | "failed"
+  recordsFound: integer("records_found").default(0),
+  recordsAdded: integer("records_added").default(0),
+  recordsSkipped: integer("records_skipped").default(0),
+  recordsDuplicate: integer("records_duplicate").default(0),
+  notes: text("notes"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Types
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
@@ -75,11 +93,15 @@ export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Manufacturer = typeof manufacturers.$inferSelect;
 export type InsertManufacturer = z.infer<typeof insertManufacturerSchema>;
 
+export type IngestionRun = typeof ingestionRuns.$inferSelect;
+export type InsertIngestionRun = z.infer<typeof insertIngestionRunSchema>;
+
 // Schemas
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, status: true, createdAt: true });
 export const insertLogSchema = createInsertSchema(logs).omit({ id: true, timestamp: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true });
 export const insertManufacturerSchema = createInsertSchema(manufacturers).omit({ id: true, createdAt: true });
+export const insertIngestionRunSchema = createInsertSchema(ingestionRuns).omit({ id: true, startedAt: true });
 
 // Request/Response Types
 export type CreateJobRequest = InsertJob;
@@ -87,3 +109,4 @@ export type JobResponse = Job;
 export type LogResponse = Log;
 export type SupplierResponse = Supplier;
 export type ManufacturerResponse = Manufacturer;
+export type IngestionRunResponse = IngestionRun;

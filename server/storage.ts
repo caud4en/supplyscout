@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { jobs, logs, suppliers, manufacturers, type InsertJob, type InsertLog, type InsertSupplier, type Manufacturer } from "@shared/schema";
-import { eq, ilike, and, or, sql, desc, lte, gte } from "drizzle-orm";
+import { jobs, logs, suppliers, manufacturers, ingestionRuns, type InsertJob, type InsertLog, type InsertSupplier, type Manufacturer, type IngestionRun } from "@shared/schema";
+import { eq, ilike, and, or, sql, desc, lte } from "drizzle-orm";
 
 export interface ManufacturerQuery {
   search?: string;
@@ -34,6 +34,10 @@ export interface IStorage {
 
   // Database-powered job sourcing
   searchManufacturersForJob(spec: string, certifications: string, preferredLocation: string, maxMoq?: number | null, limit?: number): Promise<Manufacturer[]>;
+
+  // Ingestion pipeline
+  getIngestionRuns(limit?: number): Promise<IngestionRun[]>;
+  getIngestionStats(): Promise<{ totalRuns: number; totalAdded: number; totalDuplicate: number; lastRun: string | null }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,10 +137,10 @@ export class DatabaseStorage implements IStorage {
       .from(manufacturers);
 
     const countByRegion: Record<string, number> = {};
-    byRegion.forEach(r => { countByRegion[r.region] = r.count; });
+    byRegion.forEach(r => { if (r.region) countByRegion[r.region] = r.count; });
 
     const countByIndustry: Record<string, number> = {};
-    byIndustry.forEach(r => { countByIndustry[r.industry] = r.count; });
+    byIndustry.forEach(r => { if (r.industry) countByIndustry[r.industry] = r.count; });
 
     return { totalCount, countByRegion, countByIndustry, countryCount };
   }
@@ -151,13 +155,11 @@ export class DatabaseStorage implements IStorage {
     const specTerms = spec.trim().replace(/[^a-zA-Z0-9 ]/g, " ").split(/\s+/).filter(w => w.length > 2).slice(0, 12).join(" ");
     const tsQuery = specTerms || "manufacturing";
 
-    // Build the WHERE conditions
     const baseCondition = sql`search_vector @@ plainto_tsquery('english', ${tsQuery})`;
     const moqCondition = maxMoq
       ? and(baseCondition, or(sql`moq_min IS NULL`, lte(manufacturers.moqMin, maxMoq)))
       : baseCondition;
 
-    // Primary: Full-text search via GIN index (fast, <10ms for 5000 rows)
     const results: Manufacturer[] = await db
       .select()
       .from(manufacturers)
@@ -165,7 +167,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`verified DESC, ts_rank(search_vector, plainto_tsquery('english', ${tsQuery})) DESC`)
       .limit(limit) as Manufacturer[];
 
-    // Fallback: if FTS finds fewer than 20, supplement with ilike on capabilities
     if (results.length < 20) {
       const specWords = spec.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 5);
       const fallbackConditions = specWords.map(w =>
@@ -183,7 +184,6 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Boost location-matched results to the front
     if (preferredLocation && results.length > 0) {
       const loc = preferredLocation.toLowerCase();
       results.sort((a, b) => {
@@ -194,6 +194,36 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results.slice(0, limit);
+  }
+
+  // ─── Ingestion pipeline storage ─────────────────────────────────────────────
+
+  async getIngestionRuns(limit = 50): Promise<IngestionRun[]> {
+    return db
+      .select()
+      .from(ingestionRuns)
+      .orderBy(sql`started_at DESC`)
+      .limit(limit) as Promise<IngestionRun[]>;
+  }
+
+  async getIngestionStats() {
+    const rows = await db
+      .select({
+        totalRuns: sql<number>`count(*)::int`,
+        totalAdded: sql<number>`coalesce(sum(records_added), 0)::int`,
+        totalDuplicate: sql<number>`coalesce(sum(records_duplicate), 0)::int`,
+        lastRun: sql<string>`max(started_at)::text`,
+      })
+      .from(ingestionRuns)
+      .where(eq(ingestionRuns.status, "completed"));
+
+    const row = rows[0];
+    return {
+      totalRuns: row?.totalRuns ?? 0,
+      totalAdded: row?.totalAdded ?? 0,
+      totalDuplicate: row?.totalDuplicate ?? 0,
+      lastRun: row?.lastRun ?? null,
+    };
   }
 }
 

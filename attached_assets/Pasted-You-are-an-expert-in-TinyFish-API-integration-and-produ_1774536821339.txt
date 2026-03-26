@@ -1,0 +1,41 @@
+You are an expert in TinyFish API integration and production-grade software system design.
+
+Your task is to enhance the existing codebase so that the TinyFish AI system can reliably reference and incorporate online data sources across multiple industries and countries. This should be implemented using a robust approach such as Retrieval-Augmented Generation (RAG) or an equivalent architecture.
+
+Objectives
+Codebase Understanding
+Analyze the entire existing repository, including how sample data is currently structured, stored, and accessed.
+Identify how data flows through the pipeline and where external data ingestion can be integrated effectively.
+Online Data Integration
+Design and implement a mechanism for retrieving relevant online data (e.g., APIs, web scraping, public datasets).
+Ensure the retrieved data is:
+Structured and normalized
+Relevant to multiple industries and countries
+Compatible with the existing pipeline
+RAG / Knowledge Augmentation
+Integrate a retrieval system (e.g., vector database + embeddings) that allows TinyFish AI to query and utilize the external dataset effectively.
+Ensure retrieval quality, low latency, and scalability.
+Database Requirements
+Maintain a persistent database with:
+A minimum of 10,000 rows of data
+Append-only behavior (no deletions; only incremental additions)
+Ensure durability across sessions (e.g., disk-backed DB such as PostgreSQL, SQLite, or a vector DB like Chroma/Weaviate with persistence enabled).
+Data Pipeline Design
+Implement ingestion pipelines that:
+Periodically fetch and update data
+Avoid duplication
+Validate and clean incoming data
+Ensure compatibility with existing sample data formats.
+Scalability and Reliability
+Design for extensibility across new industries and countries
+Handle API failures, rate limits, and inconsistent data sources gracefully
+Constraints
+Do not remove or overwrite existing data; only extend the dataset.
+Ensure all components integrate seamlessly with the current TinyFish pipeline.
+Prioritize clean, modular, and maintainable code.
+Output Requirements
+Provide:
+A high-level system design
+A step-by-step implementation plan
+Key code snippets or modules where necessary
+Suggested technologies/tools (databases, APIs, frameworks)

@@ -133,12 +133,17 @@ export default function JobDashboard() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-display font-bold text-slate-900">Recommended Suppliers</h2>
-                  <p className="text-slate-500 text-sm">Our agent identified and vetted {suppliers.length} suitable partners.</p>
+                  <p className="text-slate-500 text-sm">{suppliers.length} manufacturers matched and scored against your criteria.</p>
                 </div>
               </div>
             </div>
             
-            <SuppliersTable suppliers={suppliers} />
+            <SuppliersTable
+              suppliers={suppliers}
+              jobSpec={job.spec}
+              quantity={job.quantity}
+              certifications={job.certifications}
+            />
             
             <div className="mt-8 pt-8 border-t border-slate-200">
               <h3 className="text-lg font-display font-bold text-slate-900 mb-4">Original Request Configuration</h3>
