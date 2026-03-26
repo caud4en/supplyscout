@@ -364,7 +364,7 @@ async function runCampaignBackground(
         region: session.region,
         query: session.query,
         maxRecords: maxPerSession,
-        timeoutMs: 90_000,
+        timeoutMs: 480_000,
       });
 
       session.status = result.error ? "failed" : "done";

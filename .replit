@@ -44,4 +44,3 @@ integrations = ["javascript_anthropic_ai_integrations:2.0.0"]
 [userenv]
 
 [userenv.shared]
-TINYFISH_API_KEY = "sk-tinyfish-Np0zMTqcLPmqHNl2cNFsNVw_sBUgOHJQ"

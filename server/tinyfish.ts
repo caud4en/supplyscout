@@ -50,11 +50,30 @@ export async function runAgent(
       throw new Error(`TinyFish API error ${response.status}: ${errorText}`);
     }
 
-    // Parse SSE stream
+    // Parse SSE stream — TinyFish streams events over the connection
+    // We buffer the full text then walk the SSE lines
+    console.log(`[TinyFish] Waiting for SSE stream to complete...`);
     const text = await response.text();
     const lines = text.split("\n");
     let finalData: Record<string, any> | null = null;
     let rawText: string | undefined;
+
+    // Log SSE event summary for debugging
+    const eventLines = lines.filter(l => l.startsWith("data:"));
+    console.log(`[TinyFish] SSE received: ${eventLines.length} data events, ${text.length} bytes total`);
+
+    // Log unique event types seen
+    const seenTypes = new Set<string>();
+    for (const line of eventLines) {
+      try {
+        const ev = JSON.parse(line.slice(5).trim());
+        const key = `${ev.type}/${ev.status ?? ""}`;
+        if (!seenTypes.has(key)) {
+          seenTypes.add(key);
+          console.log(`[TinyFish] Event type seen: ${key}`, JSON.stringify(ev).slice(0, 200));
+        }
+      } catch { /* skip */ }
+    }
 
     for (const line of lines) {
       if (!line.startsWith("data:")) continue;
@@ -65,9 +84,10 @@ export async function runAgent(
       try {
         const event = JSON.parse(dataStr);
 
+        // Handle COMPLETE/COMPLETED
         if (event.type === "COMPLETE" && event.status === "COMPLETED") {
+          console.log(`[TinyFish] COMPLETED event — resultJson type: ${typeof event.resultJson}, result type: ${typeof event.result}`);
           if (event.resultJson) {
-            // resultJson can be a string or already parsed object
             if (typeof event.resultJson === "string") {
               try {
                 finalData = JSON.parse(event.resultJson);
@@ -77,18 +97,46 @@ export async function runAgent(
             } else {
               finalData = event.resultJson;
             }
-          } else if (event.result) {
-            rawText = event.result;
+          } else if (event.result !== undefined && event.result !== null) {
+            // result can be a pre-parsed object or a string
+            if (typeof event.result === "string") {
+              try {
+                finalData = JSON.parse(event.result);
+              } catch {
+                rawText = event.result;
+              }
+            } else {
+              // Already a parsed object — use directly
+              finalData = event.result;
+            }
           }
           break;
         }
 
+        // Handle COMPLETE/FAILED
         if (event.type === "COMPLETE" && event.status === "FAILED") {
           throw new Error(`TinyFish agent failed: ${event.error || "Unknown error"}`);
+        }
+
+        // Handle alternate completion event shapes
+        if (event.status === "COMPLETED" || event.status === "SUCCESS") {
+          console.log(`[TinyFish] Alt completion event:`, JSON.stringify(event).slice(0, 300));
+          if (event.resultJson) {
+            finalData = typeof event.resultJson === "string" ? JSON.parse(event.resultJson) : event.resultJson;
+          } else if (event.result) {
+            rawText = String(event.result);
+          } else if (event.data) {
+            finalData = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+          }
+          break;
         }
       } catch (parseErr) {
         // Skip non-JSON SSE lines
       }
+    }
+
+    if (!finalData && !rawText) {
+      console.log(`[TinyFish] No structured data extracted. Last 2 events:`, eventLines.slice(-2).join("\n").slice(0, 400));
     }
 
     return { success: true, data: finalData, rawText };

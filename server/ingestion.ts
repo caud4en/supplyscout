@@ -59,36 +59,42 @@ const DIRECTORIES: Array<{
   name: string;
   industries: string[];
   regions: string[];
+  priority: number;
 }> = [
   {
     url: "https://www.thomasnet.com/search/?what={query}&searchsource=nav",
     name: "ThomasNet",
-    industries: ["Electronics Manufacturing", "Metal Fabrication", "Industrial Machinery", "Plastics & Rubber"],
+    industries: ["all"],
     regions: ["North America"],
+    priority: 1,
   },
   {
-    url: "https://www.kompass.com/search/#%7B%22text%22%3A%22{query}%22%7D",
+    url: "https://www.europages.co.uk/en/search?q={query}",
+    name: "Europages",
+    industries: ["all"],
+    regions: ["Europe"],
+    priority: 1,
+  },
+  {
+    url: "https://www.globalsources.com/manufacturers/{query}",
+    name: "Global Sources",
+    industries: ["Electronics Manufacturing", "Plastics & Rubber", "Textiles & Apparel", "Metal Fabrication"],
+    regions: ["Asia-Pacific"],
+    priority: 1,
+  },
+  {
+    url: "https://www.kompass.com/search/?text={query}",
     name: "Kompass",
     industries: ["all"],
-    regions: ["Europe", "Asia-Pacific", "Latin America"],
-  },
-  {
-    url: "https://www.globalsources.com/manufacturer/{query}.htm",
-    name: "Global Sources",
-    industries: ["Electronics Manufacturing", "Plastics & Rubber", "Textiles & Apparel"],
-    regions: ["Asia-Pacific"],
+    regions: ["all"],
+    priority: 2,
   },
   {
     url: "https://www.made-in-china.com/products-search/hot-china-products/{query}.html",
     name: "Made-in-China",
     industries: ["Electronics Manufacturing", "Metal Fabrication", "Plastics & Rubber"],
     regions: ["Asia-Pacific"],
-  },
-  {
-    url: "https://www.europages.co.uk/companies/{query}.html",
-    name: "Europages",
-    industries: ["all"],
-    regions: ["Europe"],
+    priority: 2,
   },
 ];
 
@@ -313,33 +319,42 @@ export async function runIngestionPipeline(
     region,
     query,
     maxRecords = 50,
-    timeoutMs = 120_000,
+    timeoutMs = 480_000,
   } = opts;
 
   const searchQuery = query ?? industry ?? "manufacturer supplier";
   const run = await startRun({ source: "tinyfish", industry, region, query: searchQuery });
 
   try {
-    // Pick a relevant directory
-    const dir = DIRECTORIES.find(d =>
+    // Pick the best directory for this industry + region (lowest priority number wins)
+    const candidates = DIRECTORIES.filter(d =>
       (d.industries.includes("all") || (industry && d.industries.includes(industry))) &&
-      (!region || d.regions.includes(region))
-    ) ?? DIRECTORIES[1]; // default to Kompass (global)
+      (d.regions.includes("all") || !region || d.regions.includes(region))
+    ).sort((a, b) => a.priority - b.priority);
+    const dir = candidates[0] ?? DIRECTORIES[3]; // fallback to Kompass
 
-    const url = dir.url.replace("{query}", encodeURIComponent(searchQuery));
-    const goal = `Find real manufacturing companies listed on this directory page. ` +
-      `Extract the company names, countries, and website URLs. ` +
-      `Return all company data you find as plain text, one company per line. ` +
-      `Include: Company Name | Country | Website URL | Industry | Key Products/Capabilities`;
+    // Encode only the core keywords, not the full "manufacturer supplier" suffix
+    const keyword = (industry ?? query ?? "manufacturer").replace(/[&]/g, "").trim();
+    const url = dir.url.replace("{query}", encodeURIComponent(keyword));
+    const goal = `You are browsing a manufacturer directory. List every company you can find on this page. ` +
+      `For each company return: name, country, and website URL. ` +
+      `Return a JSON array: [{"name":"...","country":"...","url":"..."}]. ` +
+      `Include at least 5 companies if available. Do not include ads or navigation links.`;
 
-    // TinyFish web agent — respect timeout
+    console.log(`[Ingestion] TinyFish → ${dir.name} | ${keyword} | ${region ?? "Global"} | URL: ${url.slice(0,80)}`);
+
+    // TinyFish web agent — no proxy for best performance
     const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), timeoutMs));
-    const agentRun = runAgent(url, goal, { browserProfile: "stealth", proxy: { country: "US" } });
+    const agentRun = runAgent(url, goal, { browserProfile: "stealth" });
     const result = await Promise.race([agentRun, timeout]);
 
-    if (!result || !result.success) {
-      await failRun(run.id, "TinyFish agent returned no data");
-      return { runId: run.id, added: 0, duplicate: 0, skipped: 0, error: "Agent returned no data" };
+    if (!result) {
+      await failRun(run.id, `TinyFish timed out after ${timeoutMs / 1000}s`);
+      return { runId: run.id, added: 0, duplicate: 0, skipped: 0, error: `TinyFish timed out after ${timeoutMs / 1000}s` };
+    }
+    if (!result.success) {
+      await failRun(run.id, result.error ?? "TinyFish agent failed");
+      return { runId: run.id, added: 0, duplicate: 0, skipped: 0, error: result.error ?? "TinyFish agent failed" };
     }
 
     const rawText = typeof result.data === "string"
