@@ -11,6 +11,12 @@ import { runAgent, extractSupplierInfo } from "./tinyfish";
 import { runIngestionPipeline, getIngestionHistory, getIngestionStats } from "./ingestion";
 import { validateDatabase } from "./migrate";
 import { batchVerifyManufacturerUrls, getUrlStats } from "./verify-urls";
+import {
+  startBatchCampaign,
+  getActiveCampaign,
+  INDUSTRY_TAXONOMY,
+  CAMPAIGN_CONFIGS,
+} from "./collection-campaigns";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -164,6 +170,105 @@ export async function registerRoutes(
         .catch(err => console.error(`[Ingestion] Run failed:`, err));
     } catch (err) {
       res.status(500).json({ message: "Failed to start ingestion pipeline" });
+    }
+  });
+
+  // ── Batch Collection Campaigns ─────────────────────────────────────────────
+
+  // GET /api/ingestion/campaign/taxonomy — list the 105-industry taxonomy
+  app.get("/api/ingestion/campaign/taxonomy", (_req, res) => {
+    res.json({
+      totalIndustries: INDUSTRY_TAXONOMY.length,
+      totalCampaigns: CAMPAIGN_CONFIGS.length,
+      industries: INDUSTRY_TAXONOMY,
+      campaigns: CAMPAIGN_CONFIGS.map(c => ({
+        industry: c.industry,
+        regions: c.regions,
+        priority: c.priority,
+      })),
+    });
+  });
+
+  // GET /api/ingestion/campaign/status — check current campaign progress
+  app.get("/api/ingestion/campaign/status", (_req, res) => {
+    const campaign = getActiveCampaign();
+    if (!campaign) {
+      return res.json({ status: "idle", message: "No campaign running or completed" });
+    }
+
+    const sessionsByStatus = campaign.sessions.reduce((acc, s) => {
+      acc[s.status] = (acc[s.status] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    res.json({
+      id: campaign.id,
+      status: campaign.status,
+      startedAt: campaign.startedAt,
+      totalSessions: campaign.sessions.length,
+      completedSessions: campaign.completedSessions,
+      failedSessions: campaign.failedSessions,
+      pendingSessions: campaign.sessions.filter(s => s.status === "queued" || s.status === "running").length,
+      totalAdded: campaign.totalAdded,
+      totalDuplicate: campaign.totalDuplicate,
+      sessionsByStatus,
+      recentSessions: campaign.sessions
+        .filter(s => s.status === "done" || s.status === "failed")
+        .slice(-20)
+        .map(s => ({
+          industry: s.industry,
+          region: s.region,
+          status: s.status,
+          added: s.added,
+          duplicate: s.duplicate,
+          error: s.error,
+        })),
+    });
+  });
+
+  // POST /api/ingestion/campaign/start — launch a batch collection campaign
+  // Body: { priorityLevel?: 1|2|3, industries?: string[], regions?: string[], concurrency?: number }
+  app.post("/api/ingestion/campaign/start", async (req, res) => {
+    try {
+      const existing = getActiveCampaign();
+      if (existing && existing.status === "running") {
+        return res.status(409).json({
+          message: "A campaign is already running",
+          campaignId: existing.id,
+          progress: `${existing.completedSessions}/${existing.sessions.length} sessions`,
+        });
+      }
+
+      const {
+        priorityLevel = 2,
+        industries,
+        regions,
+        concurrency = 3,
+        maxPerSession = 20,
+      } = req.body ?? {};
+
+      // Fire-and-forget — responds immediately with the campaign metadata
+      const campaign = await startBatchCampaign({
+        priorityLevel,
+        industriesFilter: industries,
+        regionsFilter: regions,
+        concurrency,
+        maxPerSession,
+      });
+
+      res.status(202).json({
+        message: "Batch campaign started",
+        campaignId: campaign.id,
+        totalSessions: campaign.sessions.length,
+        industries: [...new Set(campaign.sessions.map(s => s.industry))].length,
+        regions: [...new Set(campaign.sessions.map(s => s.region))].length,
+        estimatedDurationMinutes: Math.ceil(campaign.sessions.length * 1.5 / concurrency),
+        statusUrl: "/api/ingestion/campaign/status",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Campaign] Failed to start:", msg);
+      res.status(500).json({ message: "Failed to start campaign", error: msg });
     }
   });
 

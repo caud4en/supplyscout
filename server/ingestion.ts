@@ -29,6 +29,7 @@ import { eq, sql, and, ilike } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { runAgent } from "./tinyfish";
 import { verifyUrl } from "./verify-urls";
+import { INDUSTRY_TAXONOMY } from "./collection-campaigns";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -155,27 +156,29 @@ async function claudeExtractSuppliers(
   targetIndustry: string,
   targetRegion: string
 ): Promise<RawSupplierRecord[]> {
+  const industryList = INDUSTRY_TAXONOMY.join(", ");
   const prompt = `You are a data extraction specialist. Given the following raw text scraped from a manufacturer directory, extract a list of real manufacturing companies.
 
 Return ONLY a valid JSON array (no markdown, no explanation). Each element must have:
-- name: string (company name)
-- country: string (ISO country name)
+- name: string (company name — must be a real, identifiable company, not a placeholder)
+- country: string (ISO country name, e.g. "Germany", "United States", "China")
 - city: string or null
-- industry: string (use one of: Electronics Manufacturing, Plastics & Rubber, Automotive Parts, Textiles & Apparel, Metal Fabrication, Industrial Machinery, Chemical Manufacturing, Medical Devices, Food & Beverage Processing, Packaging, Aerospace & Defense, Furniture & Woodworking, Semiconductor & Electronic Components, Renewable Energy & Clean Technology, Pharmaceutical Manufacturing, Construction & Building Materials)
-- certifications: string or null (comma-separated)
+- industry: string (choose the MOST SPECIFIC match from this taxonomy: ${industryList})
+- certifications: string or null (comma-separated, e.g. "ISO 9001, ISO 14001")
 - capabilities: string or null (short description, max 120 chars)
-- employeeCount: string or null
-- moqMin: number or null
-- url: string or null (must start with https://)
+- employeeCount: string or null (e.g. "500-1000", "5000+")
+- moqMin: number or null (minimum order quantity as integer)
+- url: string or null (company website — MUST start with https:// and be a real domain, not example.com)
 
 Target industry context: ${targetIndustry}
 Target region: ${targetRegion}
 
-Rules:
-- Only include clearly identifiable, real companies (not generic descriptions)
-- Skip any row that is clearly a placeholder, ad, or navigation element
-- Maximum 20 records
-- If uncertain about a field, use null
+CRITICAL RULES:
+- Only include clearly identifiable, verifiably real companies with real websites
+- If you are not certain a URL is real, set url to null (do NOT guess or invent URLs)
+- Skip placeholders, ads, navigation elements, and generic descriptions
+- Maximum 20 records per response
+- If uncertain about any field, use null
 
 Raw text:
 ---

@@ -1,0 +1,61 @@
+You are an expert in TinyFish API systems, data engineering, and scalable data ingestion pipelines.
+
+The current system now uses real and verified company sources, but the dataset is insufficient in size and diversity. Your task is to significantly expand the dataset while maintaining strict data integrity guarantees.
+
+Critical Requirements (Non-Negotiable)
+DO NOT fabricate any company or website under any circumstance
+ONLY include entries that are verifiably real and legitimate
+Every company and website must pass all validation checks before insertion
+Any unverified or suspicious data must be immediately discarded
+These rules must be enforced with zero tolerance for exceptions
+Objectives
+Primary Data Source: TinyFish API
+Use the TinyFish API as the primary mechanism for retrieving company and industry data
+Maximize coverage across:
+Multiple countries
+Diverse industries
+Optimize API usage for high-volume, efficient data retrieval (e.g., batching, pagination, rate-limit handling)
+Dataset Expansion
+Expand the dataset to meet and exceed:
+≥ 15,000 total verified entries
+≥ 100 distinct industries
+Ensure balanced representation across industries and regions where possible
+Strict Data Validation Pipeline
+Maintain and enforce a multi-layer validation system:
+Domain/DNS validation
+HTTP(S) response checks (valid status, SSL)
+Content verification (legitimate company presence, no placeholders)
+Reject any entries that fail validation
+Pipeline Integration
+Ensure all newly ingested data integrates seamlessly with the existing TinyFish pipeline, including:
+Data schema compatibility
+RAG (retrieval-augmented generation) components
+Embedding and indexing workflows
+Database Consistency
+Ensure both development and production databases:
+Contain identical, verified datasets
+Maintain append-only behavior
+Persist data reliably across sessions
+Scalability & Performance
+Design the ingestion process to:
+Handle large-scale data collection efficiently
+Avoid duplication
+Support incremental future growth without degrading performance
+Ongoing Data Integrity
+Implement safeguards to ensure continued data quality:
+Pre-insertion validation gates
+Periodic re-validation of stored entries
+Logging, monitoring, and alerting for failures
+Constraints
+Preserve all existing system architecture and codebase structure
+Maintain compatibility with prior requirements (validation, persistence, RAG integration)
+Ensure zero introduction of fake, fabricated, or unverifiable data
+The process must be deterministic, auditable, and reproducible
+Output Requirements
+Provide:
+A high-level architecture for large-scale data ingestion using TinyFish API
+A step-by-step execution plan for dataset expansion
+Detailed validation logic and filtering criteria
+Suggested API usage strategies (pagination, batching, retries)
+Key code snippets or modules
+A monitoring and quality assurance strategy
